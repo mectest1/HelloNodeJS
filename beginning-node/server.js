@@ -8,8 +8,7 @@ const serverPath = __dirname;
 const bowerPath = path.join(serverPath, '../bower_components');
 //console.log(bowerPath);
 
-app.use(express.static(serverP
-ath));
+app.use(express.static(serverPath));
 app.use('/bower_components', express.static(bowerPath));
 
 console.log(`serving directiry ${serverPath} with express.js, listening on port ${PORT}`);
