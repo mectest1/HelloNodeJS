@@ -1,8 +1,16 @@
 {
-	"name": "HelloNodeJS",
-	"version": "1.0.0",
-	"keywords": ["util", "functional", "server", "client", "browser"],
-	"author": "mtang071",
-	"contributors": [],
-	"dependencies": {}
+  "name": "HelloNodeJS",
+  "version": "1.0.0",
+  "keywords": [
+    "util",
+    "functional",
+    "server",
+    "client",
+    "browser"
+  ],
+  "author": "mtang071",
+  "contributors": [],
+  "dependencies": {
+    "underscore": "^1.8.3"
+  }
 }
