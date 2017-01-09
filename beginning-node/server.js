@@ -8,6 +8,7 @@ const serverPath = path.join(__dirname, './client');
 const bowerPath = path.join(__dirname, '../bower_components');
 //console.log(bowerPath);
 
+//app.use('/beginning-node/amd', express.static(serverPath));
 app.use('/beginning-node/client', express.static(serverPath));
 app.use('/bower_components', express.static(bowerPath));
 

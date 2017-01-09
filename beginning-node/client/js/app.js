@@ -2,8 +2,9 @@
 //console.log('Hello, RequireJS!');
 define([
 	'./modules/foo',
-	'./modules/bar'
-], function(foo, bar){
+	'./modules/bar',
+	'./modules/server-app-browserified'
+], function(foo, bar, amdServer){
 	foo();
 	bar.log();
 });
