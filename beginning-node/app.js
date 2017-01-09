@@ -9,3 +9,6 @@ console.log('foo.bar = ' + foo.bar);
 
 var bar = require('./base/bar');
 console.log('foo.bar = ' + foo.bar);
+
+const fooConfig = require('./config/foo-config');
+console.log(`foo-config.foo = ${fooConfig.foo}`);
