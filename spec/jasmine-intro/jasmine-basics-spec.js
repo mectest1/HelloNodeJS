@@ -348,4 +348,361 @@ describe('Introduction to Jasmine', function(){
 			pending('pending reason put here. (pend the test no matter the expectations');
 		});
 	});
+	
+	//Spies (Mocks in Jasmine)
+	describe('A spy (mock)', function(){
+		let foo, bar = null;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					expect('setBar[1] to be called');
+					bar = value;
+				}
+			};
+
+			//
+			spyOn(foo, 'setBar');	//mock method foo.setBar
+				//Note: the actually method will not be invoked unless
+				//and.callThrough() is called.
+
+			foo.setBar(123);
+			foo.setBar(456, 'another param');
+		});
+		
+		//
+		it('trackes that the spy was called', function(){
+			expect(foo.setBar).toHaveBeenCalled();
+		});
+
+		it('tracks that the spy was called X times', function(){
+			expect(foo.setBar).toHaveBeenCalledTimes(2);
+		});
+		
+		it('tracks all the arguments of its calls', function(){
+			expect(foo.setBar).toHaveBeenCalledWith(123);
+			expect(foo.setBar).toHaveBeenCalledWith(456, 'another param');
+		});
+		
+		it('shows that the actual function will not get executed', function(){
+			expect(bar).toBeNull();
+		});
+	});
+	
+	describe('A spy(mock), when configured to call through', function(){
+		let foo, bar, fetchedBar;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					bar = value;
+				},
+				getBar: function(){
+					return bar;
+				}
+			};
+			
+			//
+			spyOn(foo, 'getBar').and.callThrough();
+			
+			foo.setBar(123);
+			fetchedBar = foo.getBar();
+		});
+		
+		//
+		it('tracks that the spy was called', function(){
+			expect(foo.getBar).toHaveBeenCalled();
+		});
+		
+		it('shows that the actual function was called', function(){
+			expect(bar).toEqual(123);
+		});
+		
+		it('tracks the returned value', function(){
+			expect(fetchedBar).toEqual(123);
+		});
+	});
+	
+	
+	//
+	describe('Use a spy (mock) object to return value', function(){
+		let foo, bar, fetchedBar;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					//console.log('setBar called.');
+					bar = value;
+				},
+				getBar: function(){
+					return bar;
+				}
+			};
+			
+			//
+			spyOn(foo, 'getBar').and.returnValue(745);
+			
+			foo.setBar(123);
+			fetchedBar = foo.getBar();
+		});
+		
+		it('tracks that the spy was called', ()=> {
+			expect(foo.getBar).toHaveBeenCalled();
+		});
+		it('should not affect other functions', function(){
+			expect(bar).toEqual(123);
+		});
+		it('when called, returns the reuqirested value', function(){
+			expect(fetchedBar).toEqual(745);
+		});
+	});
+	
+	//
+	describe('A spy(mock), when configured to take a series of return values', function(){
+		let foo, bar;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					bar = value;
+				},
+				getBar: function(){
+					return bar;
+				}
+			};
+			
+			spyOn(foo, 'getBar').and.returnValues('fetched first', 'fetched second');
+			
+			foo.setBar(123);
+		});
+		
+		it('tracks that the spy was called', function(){
+			foo.getBar(123);
+			expect(foo.getBar).toHaveBeenCalled();
+		});
+		
+		it('should not affect other functions -- since foo.setBar was not spied on', function(){
+			expect(bar).toEqual(123);
+		});
+		
+		it('when called multiple times returns the requested values in order', function(){
+			expect(foo.getBar()).toEqual('fetched first');
+			expect(foo.getBar()).toEqual('fetched second');
+			expect(foo.getBar()).toBeUndefined();
+		});
+	});
+	
+	//By chaining the spy with and.callFake, all calls to the spy 
+	//will delegate to the supplied function
+	describe('A spy (mock), when configured with an alternate implementation', function(){
+		let foo, bar, fetchedBar;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					bar = value;
+				},
+				getBar: function(){
+					return bar;
+				}
+			};
+			
+			
+			spyOn(foo, 'getBar').and.callFake(function(args, can, be, received){
+				if(0 < arguments.length){
+					//Use spread operator to convert arguments into an Array
+					//ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_operator
+					return [...arguments].join();
+				}
+				return 1001;
+			});
+			
+			foo.setBar(123);
+			fetchedBar = foo.getBar();
+		});
+		
+		it('tracks that the spy was called', function(){
+			expect(foo.getBar).toHaveBeenCalled();
+		});
+		
+		it('should not affect other functions', function(){
+			expect(bar).toEqual(123);
+		});
+		
+		it('when called returns the requested value', function(){
+			expect(fetchedBar).toEqual(1001);
+		});
+		
+		it('also means that delegate function can receive arguments', function(){
+			expect(foo.getBar('hello', 'world')).toEqual('hello,world');
+		});
+		
+	});
+	
+	//By chaining the spy with and.throwError, all calls to the spy will throw the specified value as en error
+	describe('A spy, when configured to throw an error', function(){
+		let foo, bar;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					bar = value;
+				}
+			};
+			
+			spyOn(foo, 'setBar').and.throwError('quux');
+		});
+		
+		it('throws the value', function(){
+			expect(function(){
+				foo.setBar(123);
+			}).toThrowError('quux');
+		});
+	});
+	
+	//When a calling strategy is used for a spy, the original stubbing behavior
+	//can be returned at any time with and.stub
+	describe('A spy', function(){
+		let foo, bar = null;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					bar = value;
+				}
+			};
+			
+			//the and.callThrough strategy is leveraged here.
+			spyOn(foo, 'setBar').and.callThrough();
+		});
+		
+		it('can call through and then stub in the same spec', function(){
+			foo.setBar(123);
+			expect(bar).toEqual(123);
+			
+			//Reset to the original default calling strategy
+			//which basically embodies an empty function body
+			foo.setBar.and.stub();
+			bar = null;
+			
+			//
+			foo.setBar(123);
+			expect(bar).toBe(null);
+		});
+		
+	});
+	
+	
+	//Other tracking properties:
+	//Every call to a spy is tracked and exposed on the 'calls' property
+	describe('A spy(mock) object info is tracked and exposed on the "calls" property', function(){
+		let foo, bar = null;
+		
+		beforeEach(function(){
+			foo = {
+				setBar: function(value){
+					bar = value;
+				}
+			};
+			
+			spyOn(foo, 'setBar');
+		});
+		
+		it('tracks if it was called at all', function(){
+			expect(foo.setBar.calls.any()).toEqual(false);
+			
+			foo.setBar();
+			
+			expect(foo.setBar.calls.any()).toEqual(true);
+		});
+		
+		
+		it('tracks the number of times it was called', function(){
+			expect(foo.setBar.calls.count()).toEqual(0);
+			
+			foo.setBar();
+			foo.setBar();
+			
+			expect(foo.setBar.calls.count()).toEqual(2);
+		});
+		
+		it('tracks the arguments of each call', function(){
+			foo.setBar(123);
+			foo.setBar(456, 'baz');
+			
+			expect(foo.setBar.calls.argsFor(0)).toEqual([123]);
+			expect(foo.setBar.calls.argsFor(1)).toEqual([456, 'baz']);
+		});
+		
+		it('tracks the arguments of all calls', function(){
+			foo.setBar(123);
+			foo.setBar(456, 'baz');
+			
+			expect(foo.setBar.calls.allArgs()).toEqual([
+				[123],
+				[456, 'baz']
+			]);
+		});
+		
+		it('can provide the context and arguments to all calls', function(){
+			foo.setBar(123);
+			
+			expect(foo.setBar.calls.all()).toEqual([{
+				object: foo,
+				args: [123],
+				returnValue: undefined
+			}]);
+		});
+		
+		
+		it('has a shortcut to the most recent call', function(){
+			foo.setBar(123);
+			foo.setBar(456, 'baz');
+			
+			expect(foo.setBar.calls.mostRecent()).toEqual({
+				object: foo,
+				args: [456, 'baz'],
+				returnValue: undefined
+			});
+		});
+		
+		it('has a shortcut to the first call', function(){
+			foo.setBar(123);
+			foo.setBar(456, 'baz');
+			
+			expect(foo.setBar.calls.first()).toEqual({
+				object: foo,
+				args: [123],
+				returnValue: undefined
+			});
+		});
+		
+		it('tracks the context', function(){
+			let spy = jasmine.createSpy('spy');
+			let baz = {
+				fn: spy
+			};
+			let quux = {
+				fn: spy
+			};
+			
+			baz.fn(123);
+			quux.fn(456);
+			
+			expect(spy.calls.first().object).toBe(baz);
+			expect(spy.calls.mostRecent().object).toBe(quux);
+		});
+		
+		it('can be reset (clars all tracking for a spy', function(){
+			foo.setBar(123);
+			foo.setBar(456, 'baz');
+			
+			//
+			expect(foo.setBar.calls.any()).toBe(true);
+			
+			//
+			foo.setBar.calls.reset();
+			expect(foo.setBar.calls.any()).toBe(false);
+		});
+	});
 });
