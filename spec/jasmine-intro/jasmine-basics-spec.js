@@ -736,12 +736,284 @@ describe('Introduction to Jasmine', function(){
 		});
 		
 		it('allows access to the most recent call', function(){
-			expect(whatAmI.calls.mostRecent()).args[0].toEqual('I');
+			expect(whatAmI.calls.mostRecent().args[0]).toEqual('I');
 		});
 	});
 	
 	//In order to create a mock with multiple spies, use
 	//jasmine.createSpyObj and pass an array of strings. It returns 
 	//an object that has a property for each string that is a spy.
+	describe('Multiple spies (mocks), when created manually', function(){
+		let tape;
+		
+		beforeEach(function(){
+			tape = jasmine.createSpyObj('tapie', ['play', 'pause', 'stop', 'rewind']);
+			
+			tape.play();
+			tape.pause();
+			tape.rewind(0);
+		});
+		
+		it('creates spies for each each requested function', function(){
+			expect(tape.play).toBeDefined();
+			expect(tape.pause).toBeDefined();
+			expect(tape.stop).toBeDefined();
+			expect(tape.rewind).toBeDefined();
+		});
+		
+		it('tricks that the spies were called', function(){
+			expect(tape.play).toHaveBeenCalled();
+			expect(tape.pause).toHaveBeenCalled();
+			expect(tape.rewind).toHaveBeenCalled();
+			expect(tape.stop).not.toHaveBeenCalled();
+		});
+		
+		it('tracks all the arguments of its calls', function(){
+			expect(tape.rewind).toHaveBeenCalledWith(0);
+		});
+	});
 	
+	describe('jasmine.any', function(){
+		it('matches any value', function(){
+			expect({}).toEqual(jasmine.any(Object));
+			expect(12).toEqual(jasmine.any(Number));
+		});
+		
+		describe('when used with a spy', function(){
+			it('is useful for comparing arguments', function(){
+				let foo = jasmine.createSpy('foo');
+				foo(12, function(){
+					return true;
+				});	
+				expect(foo).toHaveBeenCalledWith(jasmine.any(Number), jasmine.any(Function));
+			});
+		});
+	});
+	
+	describe('jasmine.anything', function(){
+		it('matches anything', function(){
+			expect(1).toEqual(jasmine.anything());
+		});
+		
+		describe('when used with a spy', function(){
+			it('is useful when the argument can be ignored', function(){
+				let foo = jasmine.createSpy('foo');
+				foo(12, function(){
+					return false;
+				});
+				
+				expect(foo).toHaveBeenCalledWith(12, jasmine.anything());
+			});
+		});
+	});
+	
+	//
+	describe('jasmine.objectContaining', function(){
+		let foo;
+		
+		beforeEach(function(){
+			foo = {
+				a: 1,
+				b: 2,
+				bar: 'baz'
+			};
+		});
+		
+		it('matches objects with the expect key/value pairs', function(){
+			expect(foo).toEqual(jasmine.objectContaining({
+				bar: 'baz'
+			}));
+			expect(foo).not.toEqual(jasmine.objectContaining({
+				c: 37
+			}));
+		});
+		
+		describe('when used with a spy', function(){
+			it('is useful for comparing arguments', function(){
+				let callback = jasmine.createSpy('callback');
+				
+				callback({
+					bar: 'baz'
+				});
+				
+				expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({
+					bar: 'baz'
+				}));
+				expect(callback).not.toHaveBeenCalledWith(jasmine.objectContaining({
+					c: 37
+				}));
+			});
+		});
+	});
+	
+	//
+	describe('jasmine.arrayContaining', function(){
+		let foo;
+		
+		beforeEach(function(){
+			foo = [1, 2, 3, 4];
+		});
+		
+		it('matches arrays with some of the values', function(){
+			expect(foo).toEqual(jasmine.arrayContaining([3, 1]));
+			expect(foo).not.toEqual(jasmine.arrayContaining([6]));
+		});
+		
+		describe('when used with a spy', function(){
+			it('is useful when comparing arguments', function(){
+				let callback = jasmine.createSpy('callback');
+				
+				callback([1, 2,3, 4]);
+				
+				expect(callback).toHaveBeenCalledWith(jasmine.arrayContaining([4, 2, 3]));
+				expect(callback).not.toHaveBeenCalledWith(jasmine.arrayContaining([5, 2]));
+			});
+		});
+	});
+	
+	//
+	describe('jasmine.stringMatching', function(){
+		it('matches as a regex', function(){
+			expect({foo: 'bar'}).toEqual({foo: jasmine.stringMatching(/^bar$/)});
+			expect({foo: 'foobarbaz'}).toEqual({foo: jasmine.stringMatching('bar')});
+		});
+		
+		describe('when used with a spy', function(){
+			it('is useful for comparing arguments', function(){
+				let callback = jasmine.createSpy('callback');
+				
+				callback('foobarbaz');
+				
+				expect(callback).toHaveBeenCalledWith(jasmine.stringMatching('bar'));
+				expect(callback).not.toHaveBeenCalledWith(jasmine.stringMatching(/^bar$/));
+			});
+		});
+	});
+	
+	//
+	describe('custom asymmetric equality tester', function(){
+		let tester = {
+			asymmetricMatch: function(actual){
+				let secondValue = (actual).split(',')[1];
+				return secondValue === 'bar';
+			}
+		};
+		
+		it('dives in deep', function(){
+			expect('foo,bar,baz,quux').toEqual(tester);
+		});
+		
+		describe('when used with a spy', function(){
+			it('is useful for comparing arguments', function(){
+				let callback = jasmine.createSpy('callback');
+				
+				callback('foo,bar,baz');
+				
+				expect(callback).toHaveBeenCalledWith(tester);
+			});
+		});
+	});
+	
+	//
+	describe('Manually ticking the Jasmine clock', function(){
+		let timerCallback;
+		
+		beforeEach(function(){
+			timerCallback = jasmine.createSpy('timerCallback');
+			jasmine.clock().install();
+		});
+		
+		afterEach(function(){
+			jasmine.clock().uninstall();
+		});
+		
+		it('causes a timeout to be called synchronously', function(){
+			setTimeout(function(){
+				timerCallback();
+			}, 100);
+			
+			expect(timerCallback).not.toHaveBeenCalled();
+			jasmine.clock().tick(101);
+			expect(timerCallback).toHaveBeenCalled();
+		});
+		
+		it('causes an interval to be called synchronously', function(){
+			setInterval(function(){
+				timerCallback();
+			}, 100);
+			
+			expect(timerCallback).not.toHaveBeenCalled();
+			
+			jasmine.clock().tick(101);
+			expect(timerCallback.calls.count()).toEqual(1);
+			jasmine.clock().tick(50);
+			expect(timerCallback.calls.count()).toEqual(1);
+			jasmine.clock().tick(50);
+			expect(timerCallback.calls.count()).toEqual(2);
+		});
+		
+		//
+		describe('Mocking the Date object', function(){
+			it('mocks the Date object and sets it to a given time', function(){
+				let baseTime = new Date(2013, 9, 23);
+
+				jasmine.clock().mockDate(baseTime);
+
+				jasmine.clock().tick(50);
+				expect(new Date().getTime()).toEqual(baseTime.getTime() + 50);
+			});
+		});
+	});
+	
+	//
+	describe('Asynchronous specs', function(){
+		let value;
+		
+		beforeEach(function(done){
+			setTimeout(function(){
+				value = 0;
+				done();
+			}, 1);
+		});
+		
+		it('should support async executino of test preparation and expectations', function(done){
+			++value;
+			expect(value).toBeGreaterThan(0);
+			done();
+		});
+		
+		describe('long asynchronous specs', function(){
+			beforeEach(function(done){
+				done();
+			}, 1000);
+			
+			it('takes a long time', function(done){
+				setTimeout(function(){
+					done();
+				}, 9000);
+			}, 10000);
+			
+			afterEach(function(done){
+				done();
+			}, 1000);
+		});
+		
+		describe('A spec using done.fail', function(){
+			let foo = function(x, callBack1, callBack2){
+				if(x){
+					setTimeout(callBack1, 0);
+				}else{
+					setTimeout(callBack2, 0);
+				}
+			};
+			
+			it('should not call the second callBack', function(done){
+				foo(true,
+					done,
+					function(){
+						done.fail('Second callback has been called');
+					});
+			});
+		});
+	});
 });
