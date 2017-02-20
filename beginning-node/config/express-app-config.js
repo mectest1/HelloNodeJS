@@ -4,6 +4,7 @@ const express = require('express');
 const serveStatic = require('serve-static');	//alias to serve-static
 const serveIndex = require('serve-index');
 const path = require('path');
+const bodyParser = require('body-parser');
 const PORT = 3000;
 const PUBLIC_DIR = 'client';
 const publicPath = path.resolve(__dirname, '../', PUBLIC_DIR);
@@ -14,6 +15,7 @@ module.exports = {
 	serveStatic: serveStatic,
 	serveIndex: serveIndex,
 	path: path,
+	bodyParser: bodyParser,
 	PORT: PORT,
 	publicPath: publicPath,
 	bowerPath: bowerPath
