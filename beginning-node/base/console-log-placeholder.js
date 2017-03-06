@@ -1,0 +1,18 @@
+'use strict';
+
+// %d and %s
+let name = 'nate';
+let money = 33;
+console.log('%s has %d dollars', name, money);	//nate has 33 dollars;
+
+//%j
+let foo = {
+	answer: 42
+};
+console.log(foo);	//{answer: 42}
+console.log('%j', foo);	//{"answer":42}
+
+//%
+console.log('% %%');	//% %
+console.log('%d', 1);	//1
+console.log('%%d', 1);	//%d 1
