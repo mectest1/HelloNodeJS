@@ -2,7 +2,7 @@
 var t1 = Date.now();
 var foo = require('./foo');
 console.log('Time used to load module for the first time: ' + (Date.now() - t1));
-console.log('bar: module foo loaded.')
+console.log('bar: module foo loaded.');
 
 foo();
 
