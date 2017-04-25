@@ -21,6 +21,25 @@ describe('Test Suite for EventEmitter in Node ', function(){
 //		process.removeListener('uncaughtException', errListener);
 //	});	
 
+	it('shows that you can define your own EventEmitter', (done) => {
+		class Ticker extends EventEmitter{
+			constructor(){
+				super(arguments);	//or else will this ReferenceError: this is not defined
+				setInterval(() => this.emit('tick'), 1000);
+			}
+		};
+		
+		const ticker = new Ticker();
+		let tickerTimes = 0;
+		ticker.on('tick', () => {
+			++tickerTimes;
+			if(2 < tickerTimes){
+				done();
+			}else{
+				console.log('Ticked for ' + tickerTimes);
+			}
+		});
+	});
 	xit('shows what will happen when exception is thrown in listener', (done) => {
 		const myEmitter = new EventEmitter();
 		myEmitter.on('event', () => {
