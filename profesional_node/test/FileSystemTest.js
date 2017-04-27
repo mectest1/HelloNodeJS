@@ -9,8 +9,161 @@ describe('Suite for the FileSystems library', function(){
 	const q = require('q');
 	const data_dir = path.resolve(__dirname, '../data');
 	
-	it('shows how to use .existsSync() to check the existence of a file', done => {
+	it('shows how to use .stat() to get file info', done => {
+		const currentFile = path.join(__filename);
 		
+		let statP = q.nbind(fs.stat)(currentFile).then(stat => {
+			console.log('stat info of file ', currentFile);
+			console.log(util.inspect(stat));
+		});
+		let lstatP = q.nbind(fs.lstat)(currentFile).then(stat => {
+			console.log('lstat info of file ', currentFile);
+			console.log(stat);
+		});
+		//q.all(statP, lstatP)	//NO, this will not work
+		q.all([statP, lstatP])
+		//Promise.all(statP, lstatP)
+		.then((derpValue) => {
+			done();
+		})
+		.catch(er => {
+			console.error(er);
+		})
+//		.finally(() => {
+//			done();
+//		})
+		;
+	});
+	
+	xit('shows how to use .realPath() to retrieve real path', done => {
+		q.nbind(fs.realpath)(process.cwd()).then(resolvedPath => {
+			console.log('real path of process.cwd() is', resolvedPath);
+		}).catch(er => {
+			console.error(er);
+		}).finally(() => {
+			done();
+		});
+	});
+	
+	xit('shows how to use .readFile() to read content of a file', done => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		
+		q.nbind(fs.readFile)(msgFile).then(data => {
+			console.log('read file content:', data.toString());
+		}).catch(err => {
+			console.log('read file failed', err);
+		}).finally(() => {
+			done();
+		});
+	});
+	
+	xit('shows how to use .readdir() to read content of a directory', done => {
+		const dirname = __dirname;
+		q.nbind(fs.readdir)(dirname).then(files => {
+			console.log('files in directory ', dirname);
+			files.forEach(file => console.log('\t--', file));
+			done();
+		}).catch(err => {
+			console.error(err);
+			done();
+		});
+	});
+	
+	xit('shows how to use .read() to read content from a file', done => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		let openedFile = null;
+		
+		q.nbind(fs.open)(msgFile, 'r+').then(fd => {
+			console.log('open file descriptor', fd);
+			openedFile = fd;
+			const BUF_SIZE = 1024;
+			
+			const readBuffer = Buffer.alloc(BUF_SIZE);
+	
+			//return q.bind(fs.read)(fd, readBuffer, 0, 1024, 0);	//-> WRONG: it will simply return Q(fd);
+			return q.nbind(fs.read)(fd, readBuffer, 0, 1024, 0);	//OK
+//			return q.nfcall(fs.read, fd, readBuffer, 0, BUF_SIZE, 0);	//OK
+//			return q.nfapply(fs.read, [fd, readBuffer, 0, BUF_SIZE, 0]);	//OK
+	
+
+			//version 2
+//			const deferred = q.defer();
+//			fs.read(fd, readBuffer, 0, 1024, 0, (err, bytesRead, buffer) => {
+//				if(err){
+//					deferred.reject(err);
+//					return;
+//				}
+//				deferred.resolve([bytesRead, buffer]);
+//			});
+//			
+//			return deferred.promise;
+			
+		})
+		.then(([bytesRead, buffer]) => {
+			console.log('bytes read: ', bytesRead);
+			console.log('read content: ', buffer.toString());
+			done();
+		})
+		.catch(e => {
+			console.log('error occurred', e);
+			done();
+		}).finally(() => {
+			fs.close(openedFile);
+		});
+		
+	});
+	
+	xit('shows how to use .open() to open directory/file', done => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		
+		q.nbind(fs.open)(data_dir, 'r').then(fd => {
+			console.log('data_dir opened successfully with file descriptor', fd);
+			return q(fd);
+		}).then(dd => {
+			console.log('received file descriptor ', dd);
+			return q.nbind(fs.open)(msgFile, 'a+');
+		}).then(fd => {
+			console.log('msgFile opened successfully with file descriptor', fd);
+			done();
+		}).catch(e => {
+			console.log('open file/directory failed with error', e);
+			done();
+		});
+	});
+	
+	xit('shows how to use .mktemp() to make temporary directory', done => {
+		const tmpDirPrefix = '/tmp/dir/name/';
+		
+		q.nbind(fs.mkdtemp)(tmpDirPrefix).then(p => {
+			console.log('Tmp dir created successfully ', p);
+			done();
+		}).catch(e => {
+			console.log('create tmp dir failed', e);
+			done();
+		});
+	});
+	
+	xit('shows how to use .lstat() to get statistic info of a file', (done) => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		//const msgFile = '/derp/file/that/does/not/exist';
+		q.nbind(fs.lstat)(msgFile).then(stat => {
+			console.log('stat info for file', msgFile);
+			console.log(util.inspect(stat));
+		}).catch(e => {
+			console.log('get stat info for file ', msgFile, 'failed, error: ');
+			console.log(e);
+			
+		}).finally(() => {
+			done();
+		});
+	});
+	
+	xit('shows how to use .existsSync() to check the existence of a file', () => {
+		const derpFile = '/file/that/does/not/exist';
+		expect(fs.existsSync(derpFile)).toBeFalsy();
+		
+		const msgFile = path.join(data_dir, 'message.txt');
+		expect(fs.existsSync(msgFile)).toBeTruthy();
 	});
 	
 	
@@ -19,7 +172,7 @@ describe('Suite for the FileSystems library', function(){
 			console.log('access check result: ', err);
 			expect(err).toBeTruthy();
 			done();
-		})
+		});
 	});
 	
 	xit('shows how to create a write stream', done => {
