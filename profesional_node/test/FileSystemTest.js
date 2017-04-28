@@ -9,7 +9,102 @@ describe('Suite for the FileSystems library', function(){
 	const q = require('q');
 	const data_dir = path.resolve(__dirname, '../data');
 	
-	it('shows how to use .stat() to get file info', done => {
+	it('shows how to extract information from the fs.Stats object', done => {
+		Promise.all([	//This all work
+		//q.all([		//This will also work
+			q().then(() => {
+				//const f = path.join(data_dir, 'message.txt');
+				const f = __dirname;
+				
+				return q.nbind(fs.stat)(f);
+			}).then(stats => {
+				console.log('stats.isFile', stats.isFile());
+				console.log('stats.isDirectory', stats.isDirectory());
+				console.log('stats.isBlockDevice', stats.isBlockDevice());
+				console.log('stats.isCharacterDevice', stats.isCharacterDevice());
+				console.log('stats.isSymbolicLink', stats.isSymbolicLink());
+				console.log('stats.isFIFO', stats.isFIFO());
+				console.log('stats.isSocket', stats.isSocket());
+			})
+			
+		]).then(() => done());
+	});
+	
+	xit('shows content of fs.constants', () => {
+		console.log('contents of fs.constants', util.inspect(fs.constants));
+	});
+	
+	xit('shows how to use .write() to write content into a file', done => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		
+		//Even this can work
+//		q().then(() => {
+//			console.log('derp');
+//		}).then(() => {
+//			console.log('derp2');
+//		}).finally(() => {
+//			done();
+//		});
+		
+		q.nbind(fs.open)(msgFile, 'a').then(fd => {
+			console.log('file descriptor:', fd);
+			//return q.nbind(fs.write)(fd, 
+			//	Buffer.from('\nhello from .write() at' + new Date().toLocaleString()));
+			return q.nbind(fs.write)(fd, '\nhello from .write() at ' + new Date().toLocaleString());
+		}).then(([written, buffer]) => {
+			console.log('written length: ', written);
+			console.log('written data: ', buffer.toString());
+			return q.nbind(fs.readFile)(msgFile);
+		}).then(data => {
+			console.log('current content of file', data.toString());
+			done();
+		}).catch(e => {
+			console.log('error occurred', e);
+			done();
+		})
+		
+		;
+		
+	});
+	
+	
+	xit('shows how to use .watchFile() to poll file chnages', done => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		
+		
+		fs.watchFile(msgFile, {
+			interval: 1000
+		}, (cur, prev) => {
+			console.log('current stat of file: ', cur);
+			console.log('previous stat of file: ', prev);
+			fs.unwatchFile(msgFile);
+			done();
+		});
+		
+		q.nbind(fs.appendFile)(msgFile, '\nhello from .watchFile() at' + new Date().toLocaleString()).then(e => {
+			if(e){
+				console.log('error occurred while writing file:', e);
+				done();
+			}
+		});
+	});
+	
+	xit('shows how to use .watch() to watch file status', done => {
+		const msgFile = path.join(data_dir, 'message.txt');
+		
+		fs.watch(msgFile, (eventType, fileName) => {
+			console.log('event occured:  type:', eventType, ', file: ', fileName);
+			done();
+		});
+		q.nbind(fs.appendFile)(msgFile, '\nhello from .watch() at ' + new Date().toLocaleDateString()).then(e => {
+			if(e){
+				console.log('write file error', e);
+				done();
+			}
+		});
+	});
+	
+	xit('shows how to use .stat() to get file info', done => {
 		const currentFile = path.join(__filename);
 		
 		let statP = q.nbind(fs.stat)(currentFile).then(stat => {
@@ -168,9 +263,22 @@ describe('Suite for the FileSystems library', function(){
 	
 	
 	xit('shows how to use .access() to check if a file exists', (done) => {
-		fs.access('/some/file/that/does not/exist', (err) => {
-			console.log('access check result: ', err);
-			expect(err).toBeTruthy();
+		q.all(
+			[q().then(() => {
+				fs.access('/some/file/that/does not/exist', (err) => {
+					console.log('access check result: ', err);
+					expect(err).toBeTruthy();
+					//done();
+				});
+
+			}), q().then(() => {
+				const msgFile = path.join(data_dir, 'message.txt');
+				return q.nbind(fs.access)(msgFile);
+
+			}).then(e => {
+				console.log('check result for msgFile (undefined means it exists): ', e);
+			})]
+		).then(() => {
 			done();
 		});
 	});

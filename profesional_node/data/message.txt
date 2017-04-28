@@ -2,3 +2,11 @@ data to appended at 1493112253233
 data to appended at 1493112254955
 data written with WriteStream at Tue, 25 Apr 2017 12:12:55 GMT
 data written with WriteStream at 4/25/2017, 8:13:26 PM
+hello from .watch() at 4/28/2017
+hello from .watch() at 4/28/2017
+hello from .watch() at 4/28/2017
+hello from .watchFile() at4/28/2017, 12:23:05 PM
+hello from .watchFile() at4/28/2017, 12:25:30 PM
+hello from .write() at4/28/2017, 1:48:42 PM
+hello from .write() at4/28/2017, 1:49:07 PM
+hello from .write() at 4/28/2017, 2:00:41 PM
