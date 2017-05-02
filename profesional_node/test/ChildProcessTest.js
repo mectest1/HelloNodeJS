@@ -4,9 +4,75 @@
 describe('Suite to test the Child Processes library', () => {
 	const q = require('q');
 	const child_process = require('child_process');
+	const path = require('path');
+	const fs = require('fs');
 	const {spawn} = child_process;
 	
-	it('shows advanced technique to use .spanw()', done => {
+	
+	it('shows how to use .stdio to access standard pipes of the child process', () => {
+		const msgFile = path.join(__dirname, '../data/message.txt');
+		
+		const child = spawn('C:/cygwin64/bin/ps.exe', {
+			stdio: [
+				0,	//use parent's stdin for child
+				'pipe',		//pipe child's stdout to parent
+				fs.openSync(msgFile, 'a')	//direct child's stderr to a file
+			]
+		});
+		
+		expect(child.stdio[0]).toBeNull();
+		expect(child.stdio[0]).toBe(child.stdin);
+		
+		expect(child.stdout).toBeTruthy();
+		expect(child.stdio[1]).toBe(child.stdout);
+		
+		expect(child.stdio[2]).toBeNull();
+		expect(child.stdio[2]).toBe(child.stderr);
+		
+	});
+	
+	xit('shows how to ue .send() to send message between parent/child process', done => {
+		const sub_script = path.join(__dirname, '../data/sub-process.js');
+		
+		const sub = child_process.fork(sub_script);
+		sub.on('message', m => {
+			console.log('PARENT got message', m);
+			done();
+		});
+		
+		sub.send({
+			hello: 'world'
+		}, e => {
+			if(e){
+				console.log('message send failed', e);
+			}
+		});
+		//sub.kill();
+		sub.on('error', e => {
+			console.log('error occurred on sub process', e);
+			done();
+		});
+	});
+	
+	
+	xit('shows how to use .kill() to send signal to the child process', done => {
+		const grep = spawn('C:/cygwin64/bin/ps.exe');;
+		
+		grep.on('close', (code, signal) => {
+			console.log('child process terminated due to receipt of signal ', signal);
+			done();
+		});
+		
+		//Send SIGHUP to process
+		console.log('send SIGHUP to child process');
+		//grep.kill('SIGTERM');
+		grep.kill();
+//		setTimeout(() => {
+//		}, 1000);	//not the best way to terminate a child process
+		
+	});
+	
+	xit('shows advanced technique to use .spawn()', done => {
 		const ps = spawn('C:/cygwin64/bin/ps.exe');
 		const grep = spawn('C:/cygwin64/bin/grep.exe', ['bash']);
 		//const grep = spawn('C:/cygwin64/bin/less.exe');
