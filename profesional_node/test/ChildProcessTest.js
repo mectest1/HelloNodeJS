@@ -9,7 +9,65 @@ describe('Suite to test the Child Processes library', () => {
 	const {spawn} = child_process;
 	
 	
-	it('shows how to use .stdio to access standard pipes of the child process', () => {
+	it('shows how to use .kill() to send signals to child process', done => {
+		const childScript = path.join(__dirname, '../data/sub-signal.js');
+		
+		const child = child_process.spawn('node', [childScript]);
+		
+		//child.kill('SIGNDERP');	//unknown signal
+//		child.kill('SIGINT');
+//		child.kill('SIGCONT');
+//		child.kill('SIGUSR1');	//Unknown signal on Windows 
+		
+		setTimeout(done, 3000);
+	});
+	
+	xit('shows how to use .spawn() to communicate with the child process', done => {
+		const childScript = path.join(__dirname, '../data/sub-plus1.js').normalize();
+		
+		//Spawn the child with a node process executing the plug_one app
+		const child = child_process.spawn('node', [childScript]);
+		let number = Math.floor(Math.random() * 10000);
+		
+		child.stdin.write(number + '\n');
+		
+		child.stdout.on('data', data => {	//data is Buffer
+			console.log('with number', number, 'the child response is', data && data.toString());	
+			//child.kill();	//turn on&off manually termination of child process
+		});
+		child.stderr.on('data', data => {
+			console.log('with number', number, 'the child responds with an error', err);
+			done();
+		});
+		child.on('exit', (code, signal) =>{
+			
+			//if child.kill() is invoked, then (code, signal) would be (null, 'SIGTERM'), 
+			//else the child process will terminate by itself, and (code, signal) will be (0, null);
+			console.log('child process exit with code', code, ', signal', signal);
+			done();
+		});
+		
+	});
+	
+	xit('shows to how use .exe() to pass environment variables to child process', done => {
+		const childScript = path.join(__dirname, '../data/sub-env.js').normalize();
+		console.log(childScript);
+		child_process.exec(`node ${childScript}`, {
+			env: {
+				number: 123
+			}
+		}, (err, stdout, stderr) => {
+			if(err){
+				throw err;
+			}
+			console.log('stdout:', stdout);
+			console.log('stderr:', stderr);
+			done();
+		});
+	});
+	
+	
+	xit('shows how to use .stdio to access standard pipes of the child process', () => {
 		const msgFile = path.join(__dirname, '../data/message.txt');
 		
 		const child = spawn('C:/cygwin64/bin/ps.exe', {
@@ -37,7 +95,10 @@ describe('Suite to test the Child Processes library', () => {
 		const sub = child_process.fork(sub_script);
 		sub.on('message', m => {
 			console.log('PARENT got message', m);
-			done();
+//			process.nextTick(() => {
+//				done();
+//			});
+			setTimeout(done, 1000);	//Give the child process sometime to response;
 		});
 		
 		sub.send({
