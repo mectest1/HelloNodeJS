@@ -9,9 +9,146 @@ describe('Test Suite for the \'http\' library of Node', () => {
 	const url = require('url');
 	
 	const util = require('util');
+	const q = require('q');
+	const path = require('path');
 	
+	it('shows how to response with generated content from http server', done => {
+		const server = http.createServer((req, res) => {
+			res.writeHead(200, {
+				'Content-Type': 'text/plain'
+			});
+			let left = 10;
+			const interval = setInterval(() => {
+				if(0 >= --left){
+					clearInterval(interval);
+//					res.end(new Date().toDateString());
+					res.end(Date.now() + '');
+				}else{
+					//res.write(new Date().toDateString());
+					res.write(Date.now() + '');
+				}
+			}, 10);
+		}).listen(LOCAL_PORT);
+		
+		http.get({
+			port: LOCAL_PORT
+		}, res => {
+			res.setEncoding('utf8');
+			res.on('data', chunk => {
+				console.log('*received data from server', chunk);
+			}).on('end', () => {
+				console.log('*no more data from server');
+				server.close(() => {
+					console.log('*server closed');
+					done();
+				});
+			});
+		});
+	});
 	
-	it('shows how to use the ServerResponse object', done => {
+	xit('shows how to build a simple http static file server', done => {
+		const server = http.createServer((req, res) => {
+			const file = path.normalize('./' + req.url);
+			console.log('Trying to serve file: ', file);
+			//res.end('hello there');
+			
+			function reportError(err){
+				console.log(err);
+				res.writeHead(500);
+				res.end('Internal Server Error');
+			}
+			
+			//q.nbind(fs.exists)(file).then(	//fs.exists cannot be converted to a promise through q.nbind, 
+			//									//since there's only one param in callback function
+			fs.exists(file, 
+				exists => {
+				console.log(`Does ${file} exist? ${exists}`);
+				if(!exists){
+					res.writeHead(404);
+					res.end('Not Found');
+					return;
+				}
+				
+				q.nbind(fs.stat)(file).then(stat => {
+					if(stat.isDirectory()){
+						res.writeHead(403);
+						res.end('Forbidden');
+						return;
+					}
+					const rs = fs.createReadStream(file);
+					rs.on('error', reportError);
+					res.writeHead(200);
+					rs.pipe(res);
+				}).catch(err => {
+					reportError(err);
+				});
+			})
+//			.catch(e => {
+//				console.log('file.exists error: ', e);
+//			})
+			;
+		}).listen(LOCAL_PORT);
+		
+		http.get({
+			port: LOCAL_PORT,
+			//host: LOCAL_HOST,
+			path: '/' + path.parse(__filename).base
+			//path: '/derp'
+		}, res => {
+			res.setEncoding('utf8');
+			
+			res.on('data', chunk => {
+				console.log('*received content from server', (500 > chunk.length ? chunk : chunk.substr(0, 500) + '...'));
+				
+			}).on('end', () => {
+				console.log('*no more data from server');
+				server.close(() => {
+					console.log('http server closed');
+					done();
+				});
+			});
+		});
+		
+//		setTimeout(() => {
+//			console.log('Time up');
+//			server.close(() => {
+//				console.log('http server closed');
+//				done();
+//			});
+//		}, 2000);
+	});
+	
+	xit('shows how to pipe stream into http response', done => {
+		const s = http.createServer((req, res) => {
+			res.writeHead(200, {
+				'Content-Type': 'text/plain'
+			});
+			fs.createReadStream(__filename).pipe(res);
+		}).listen(LOCAL_PORT);
+		
+		http.get({
+			port: LOCAL_PORT
+		}, res => {
+			res.setEncoding('utf8');
+			//
+			
+			res.on('data', chunk => {
+				console.log('*received content from server: ', chunk);
+			}).on('end', () => {
+				console.log('*no more data from server');
+			});
+		});
+		
+		setTimeout(() => {
+			console.log('Time up');
+			s.close(() => {
+				console.log('http server closed');
+				done();
+			});
+		}, 2000);
+	});
+	
+	xit('shows how to use the ServerResponse object', done => {
 		const s = http.createServer((req, res) => {
 			
 			res.writeHead(200, {
