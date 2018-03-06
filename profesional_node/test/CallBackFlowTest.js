@@ -1,7 +1,5 @@
 /* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * To run this test, you need to run server script ../data/suqaring-server.js first;
  */
 const async = require('async'),
 		request = require('request');
@@ -14,14 +12,18 @@ describe('Typical callback paradigms in JS', () => {
 		}
 		console.log('result: %j', results);	//%j is a Node.js specific placeholder, for JSON.stringify()
 	}
-	it('testst series call with the async library', testDone => {
-		function done(err, results){
+	
+	function done(testDone){
+		return function(err, results){
 			//outputResult(arguments);
 			//outputResult.apply(arguments);
 			outputResult(err, results);
 			testDone();
-		}
-		async.series([next => {
+		};
+	}
+	xit('tests series call with the async library', test => {
+		
+		async.series([next => {	//async.series will also work
 			request.post({
 				uri: 'http://localhost:8080', body: '4'
 			}, (err, res, body) => {
@@ -33,6 +35,28 @@ describe('Typical callback paradigms in JS', () => {
 			}, (err, res, body) => {
 				next(err, body && JSON.parse(body));
 			});
-		}], done);
+		}], done(test));
+	
 	});
+	
+	xit('tests cascading call with it.waterfall', test => {
+		async.waterfall([
+			next => {
+				request.post({
+					uri: 'http://localhost:8080', body: '3'
+				}, next);
+			},
+			(res, body, next) => {
+				request.post({
+					uri: 'http://localhost:8080', body: body
+				}, next);
+			}
+		], done(test));
+	});
+	
+	
+	it('shows how ot utilize the async.queueo to arrange asynchronous works', test => {
+		test();
+	});
+	
 });
